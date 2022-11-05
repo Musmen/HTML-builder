@@ -11,11 +11,11 @@ const logFileData = (name, extension, size) => {
   console.log(`${name} - ${extension} - ${size}`);
 };
 
-const logFolderContent = (folderContent) => {
+const logFolderContent = (folderContent, folderPath) => {
   folderContent.forEach((content) => {
     if (content.isDirectory()) return;
 
-    const innerFileFullPath = path.join(secretFolderPath, content.name);
+    const innerFileFullPath = path.join(folderPath, content.name);
 
     fs.stat(innerFileFullPath, (error, fileStats) => {
       if (error) {
@@ -34,4 +34,6 @@ const secretFolderPath = path.join(__dirname, './secret-folder');
 const folderContentPromise = fsPromises.readdir(secretFolderPath, {
   withFileTypes: true,
 });
-folderContentPromise.then(logFolderContent);
+folderContentPromise.then((folderContent) =>
+  logFolderContent(folderContent, secretFolderPath)
+);
