@@ -1,5 +1,4 @@
 const path = require('path');
-const fs = require('fs');
 const fsPromises = require('fs/promises');
 
 const getFileNameAndExtension = (filePath) => {
@@ -7,33 +6,30 @@ const getFileNameAndExtension = (filePath) => {
   return { name, extension: ext.slice(1) };
 };
 
-const logFileData = (name, extension, size) => {
+const logFile = (name, extension, size) => {
   console.log(`${name} - ${extension} - ${size}`);
 };
 
-const logFolderContent = (folderContent, folderPath) => {
+const logFolderFile = async (fileName, folderPath) => {
+  const innerFileFullPath = path.join(folderPath, fileName);
+  const { name, extension } = getFileNameAndExtension(innerFileFullPath);
+
+  const fileStats = await fsPromises.stat(innerFileFullPath);
+  const { size } = fileStats;
+
+  logFile(name, extension, size);
+};
+
+const logFilesInFolder = async (folderPath) => {
+  const folderContent = await fsPromises.readdir(folderPath, {
+    withFileTypes: true,
+  });
+
   folderContent.forEach((content) => {
     if (content.isDirectory()) return;
-
-    const innerFileFullPath = path.join(folderPath, content.name);
-
-    fs.stat(innerFileFullPath, (error, fileStats) => {
-      if (error) {
-        console.log(`Error reading file ${innerFileFullPath}: `, error);
-        return;
-      }
-
-      const { name, extension } = getFileNameAndExtension(innerFileFullPath);
-      const { size } = fileStats;
-      logFileData(name, extension, size);
-    });
+    logFolderFile(content.name, folderPath);
   });
 };
 
 const secretFolderPath = path.join(__dirname, './secret-folder');
-const folderContentPromise = fsPromises.readdir(secretFolderPath, {
-  withFileTypes: true,
-});
-folderContentPromise.then((folderContent) =>
-  logFolderContent(folderContent, secretFolderPath)
-);
+logFilesInFolder(secretFolderPath);
