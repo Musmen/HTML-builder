@@ -1,56 +1,24 @@
 const path = require('path');
-const fs = require('fs');
+const fsPromises = require('fs/promises');
 
-const copyFile = (sourceContentPath, copyContentPath) => {
-  fs.copyFile(sourceContentPath, copyContentPath, (error) => {
-    if (error) console.log('File copy error: ', error);
-  });
-};
-
-const copyDir = (sourceFolderPath, copyFolderPath) => {
+const copyDir = async (sourceFolderPath, copyFolderPath) => {
   if (!sourceFolderPath || !copyFolderPath) return;
 
-  fs.readdir(
-    sourceFolderPath,
-    { withFileTypes: true },
-    (readDirError, folderContent) => {
-      if (readDirError) {
-        console.log('Read directory error: ', readDirError);
-        return;
-      }
+  const folderContent = await fsPromises.readdir(sourceFolderPath, {
+    withFileTypes: true,
+  });
 
-      fs.rm(
-        copyFolderPath,
-        { force: true, recursive: true },
-        (clearCopyFolderError) => {
-          if (clearCopyFolderError)
-            console.log('Clear copy folder error: ', clearCopyFolderError);
+  await fsPromises.rm(copyFolderPath, { force: true, recursive: true });
+  await fsPromises.mkdir(copyFolderPath, { recursive: true });
 
-          fs.mkdir(copyFolderPath, { recursive: true }, (createDirError) => {
-            if (createDirError) {
-              console.log('Create directory error: ', createDirError);
-              return;
-            }
+  folderContent.forEach(async (content) => {
+    const sourceContentPath = path.join(sourceFolderPath, content.name);
+    const copyContentPath = path.join(copyFolderPath, content.name);
 
-            folderContent.forEach((content) => {
-              const sourceContentPath = path.join(
-                sourceFolderPath,
-                content.name
-              );
-              const copyContentPath = path.join(copyFolderPath, content.name);
-
-              if (content.isDirectory()) {
-                copyDir(sourceContentPath, copyContentPath);
-                return;
-              }
-
-              copyFile(sourceContentPath, copyContentPath);
-            });
-          });
-        }
-      );
-    }
-  );
+    if (content.isDirectory()) {
+      copyDir(sourceContentPath, copyContentPath);
+    } else fsPromises.copyFile(sourceContentPath, copyContentPath);
+  });
 };
 
 const folderPath = path.join(__dirname, './files');
