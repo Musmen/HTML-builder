@@ -41,11 +41,13 @@ const bundleCSS = async (
 
   const cssFiles = filterCSSFiles(sourceContent);
 
-  const textCSS = await Promise.all(
+  let textCSS = await Promise.all(
     cssFiles.map((content) =>
       fsPromises.readFile(path.join(sourcePath, content.name))
     )
   );
+
+  textCSS = textCSS.map((cssText) => cssText + '\r\n');
 
   fsPromises.writeFile(distPath, textCSS);
 };
